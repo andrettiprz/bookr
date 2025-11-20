@@ -1,0 +1,183 @@
+.reservation-detail-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.detail-card {
+  padding: 2.5rem;
+}
+
+.detail-header-info {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.status-confirmed {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.status-pending {
+  background: rgba(251, 191, 36, 0.1);
+  color: #ca8a04;
+}
+
+.detail-header-info h1 {
+  font-size: 2.5rem;
+  color: #1f2937;
+  font-weight: 800;
+  margin: 0;
+}
+
+.detail-section {
+  margin-bottom: 2rem;
+}
+
+.detail-section h3 {
+  font-size: 1.25rem;
+  color: #374151;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.detail-section p {
+  color: #6b7280;
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.detail-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.detail-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detail-value {
+  font-size: 1.125rem;
+  color: #1f2937;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.attendees-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.attendee-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.not-found {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.not-found-icon {
+  font-size: 5rem;
+  display: block;
+  margin-bottom: 1.5rem;
+}
+
+.not-found h2 {
+  font-size: 1.75rem;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.not-found p {
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .reservation-detail-page {
+    padding: 1rem;
+  }
+
+  .detail-card {
+    padding: 1.5rem;
+  }
+
+  .detail-header-info h1 {
+    font-size: 2rem;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions .btn {
+    flex: 1;
+  }
+}
+
