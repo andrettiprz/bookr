@@ -299,7 +299,7 @@ if [ $? -eq 0 ]; then
             DEPLOY_SUCCESS=false
             
             while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$DEPLOY_SUCCESS" = false ]; do
-                if func azure functionapp publish bookr-api --javascript 2>&1 | tee /tmp/func-deploy.log; then
+                if func azure functionapp publish bookr-api --javascript --force 2>&1 | tee /tmp/func-deploy.log; then
                     DEPLOY_SUCCESS=true
                     echo -e "${GREEN}✅ Backend desplegado exitosamente.${NC}"
                     
