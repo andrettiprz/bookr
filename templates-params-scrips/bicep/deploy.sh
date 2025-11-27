@@ -312,6 +312,28 @@ if [ $? -eq 0 ]; then
                         az functionapp cors add --name bookr-api --resource-group "$RESOURCE_GROUP" --allowed-origins "http://localhost:5173" 2>&1 > /dev/null
                         echo -e "${GREEN}✅ CORS configurado para Static Web App.${NC}"
                     fi
+                    
+                    # Inicializar base de datos automáticamente
+                    echo -e "${YELLOW}Inicializando base de datos...${NC}"
+                    sleep 5  # Esperar a que el Function App esté completamente listo
+                    INIT_RESPONSE=$(curl -s -X POST "https://bookr-api.azurewebsites.net/api/initdb" -w "\n%{http_code}" || echo "000")
+                    HTTP_CODE=$(echo "$INIT_RESPONSE" | tail -n 1)
+                    
+                    if [ "$HTTP_CODE" = "200" ]; then
+                        echo -e "${GREEN}✅ Base de datos inicializada exitosamente.${NC}"
+                    else
+                        echo -e "${YELLOW}⚠️  Intentando inicializar base de datos nuevamente...${NC}"
+                        sleep 10
+                        INIT_RESPONSE=$(curl -s -X POST "https://bookr-api.azurewebsites.net/api/initdb" -w "\n%{http_code}" || echo "000")
+                        HTTP_CODE=$(echo "$INIT_RESPONSE" | tail -n 1)
+                        
+                        if [ "$HTTP_CODE" = "200" ]; then
+                            echo -e "${GREEN}✅ Base de datos inicializada exitosamente.${NC}"
+                        else
+                            echo -e "${YELLOW}⚠️  No se pudo inicializar la base de datos automáticamente.${NC}"
+                            echo -e "${YELLOW}Ejecuta manualmente: curl -X POST https://bookr-api.azurewebsites.net/api/initdb${NC}"
+                        fi
+                    fi
                 else
                     RETRY_COUNT=$((RETRY_COUNT + 1))
                     if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
