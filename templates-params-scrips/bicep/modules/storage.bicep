@@ -164,4 +164,5 @@ resource fileService 'Microsoft.Storage/storageAccounts/fileServices@2025-06-01'
 
 output storageAccountName string = storageAccount.name
 output storageAccountId string = storageAccount.id
+output storageAccountKey string = storageAccount.listKeys().keys[0].value
 

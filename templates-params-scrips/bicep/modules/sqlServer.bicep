@@ -41,9 +41,6 @@ param readScaleOut string = 'Disabled'
 @description('Number of replicas')
 param numberOfReplicas int = 0
 
-@description('Min capacity (use 0 to disable)')
-param minCapacity int = 0
-
 @description('Auto pause delay in minutes')
 param autoPauseDelay int = 60
 
@@ -159,7 +156,6 @@ resource database 'Microsoft.Sql/servers/databases@2023-05-01-preview' = {
     licenseType: licenseType != '' ? licenseType : null
     readScale: readScaleOut
     highAvailabilityReplicaCount: numberOfReplicas
-    minCapacity: minCapacity > 0 ? minCapacity : null
     autoPauseDelay: autoPauseDelay
     requestedBackupStorageRedundancy: requestedBackupStorageRedundancy
     isLedgerOn: enableSqlLedger

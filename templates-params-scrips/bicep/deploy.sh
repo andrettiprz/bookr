@@ -259,11 +259,77 @@ if [ $? -eq 0 ]; then
         fi
         echo ""
     fi
-    echo -e "${YELLOW}Próximos pasos:${NC}"
-    echo "1. Espera 2-5 minutos para que Static Web App complete el build automático"
-    echo "2. Verifica que el workflow de GitHub Actions se ejecute correctamente"
-    echo "3. Despliega el código de Functions:"
-    echo "   ${GREEN}cd ../../backend && npm install && func azure functionapp publish bookr-api${NC}"
+    
+    # Desplegar código del backend automáticamente
+    echo -e "${YELLOW}Desplegando código del backend...${NC}"
+    BACKEND_DIR="$SCRIPT_DIR/../../backend"
+    
+    if [ -d "$BACKEND_DIR" ]; then
+        cd "$BACKEND_DIR"
+        
+        # Instalar dependencias
+        echo -e "${YELLOW}Instalando dependencias del backend...${NC}"
+        npm install --silent 2>&1 | tail -5
+        
+        # Crear .funcignore si no existe
+        if [ ! -f ".funcignore" ]; then
+            echo "node_modules" > .funcignore
+            echo ".git" >> .funcignore
+            echo ".vscode" >> .funcignore
+            echo "local.settings.json" >> .funcignore
+            echo ".DS_Store" >> .funcignore
+        fi
+        
+        # Verificar si func está instalado
+        if ! command -v func &> /dev/null; then
+            echo -e "${RED}❌ Azure Functions Core Tools no está instalado.${NC}"
+            echo -e "${YELLOW}Instálalo con: brew install azure-functions-core-tools@4${NC}"
+            echo -e "${YELLOW}Luego ejecuta manualmente:${NC}"
+            echo -e "   ${GREEN}cd backend && func azure functionapp publish bookr-api --javascript${NC}"
+        else
+            echo -e "${YELLOW}Publicando código del backend a Azure...${NC}"
+            
+            # Reiniciar Function App primero
+            az functionapp restart --name bookr-api --resource-group "$RESOURCE_GROUP" &> /dev/null
+            sleep 5
+            
+            # Desplegar con retry
+            MAX_RETRIES=3
+            RETRY_COUNT=0
+            DEPLOY_SUCCESS=false
+            
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$DEPLOY_SUCCESS" = false ]; do
+                if func azure functionapp publish bookr-api --javascript 2>&1 | tee /tmp/func-deploy.log; then
+                    DEPLOY_SUCCESS=true
+                    echo -e "${GREEN}✅ Backend desplegado exitosamente.${NC}"
+                else
+                    RETRY_COUNT=$((RETRY_COUNT + 1))
+                    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                        echo -e "${YELLOW}⚠️  Intento $RETRY_COUNT falló. Reintentando en 10 segundos...${NC}"
+                        sleep 10
+                    else
+                        echo -e "${YELLOW}⚠️  No se pudo desplegar el backend automáticamente.${NC}"
+                        echo -e "${YELLOW}Despliégalo manualmente con:${NC}"
+                        echo -e "   ${GREEN}cd backend && func azure functionapp publish bookr-api --javascript${NC}"
+                    fi
+                fi
+            done
+        fi
+        
+        cd "$SCRIPT_DIR"
+    else
+        echo -e "${YELLOW}⚠️  Carpeta backend no encontrada.${NC}"
+    fi
+    
+    echo ""
+    echo -e "${YELLOW}Estado Final:${NC}"
+    echo "✅ Infraestructura desplegada"
+    echo "✅ Backend desplegado"
+    echo "⏳ Frontend desplegándose vía GitHub Actions (2-5 minutos)"
+    echo ""
+    echo -e "${YELLOW}Verifica:${NC}"
+    echo "1. GitHub Actions: https://github.com/$(git config remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/actions"
+    echo "2. Cuando termine GitHub Actions, tu app estará en: https://${STATIC_WEB_URL}"
     echo ""
 else
     echo ""

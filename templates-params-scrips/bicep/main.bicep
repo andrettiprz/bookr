@@ -107,7 +107,6 @@ module sqlServer 'modules/sqlServer.bicep' = {
     licenseType: ''
     readScaleOut: 'Disabled'
     numberOfReplicas: 0
-    minCapacity: 1
     autoPauseDelay: 60
     allowAzureIps: false
     enableADS: false
@@ -161,7 +160,7 @@ module functionApp 'modules/functionApp.bicep' = {
     sqlDatabaseName: sqlDatabaseName
     sqlUser: sqlAdministratorLogin
     sqlPassword: sqlAdministratorPassword
-    storageConnectionString: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.outputs.storageAccountName};EndpointSuffix=core.windows.net'
+    storageConnectionString: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.outputs.storageAccountName};AccountKey=${storageAccount.outputs.storageAccountKey};EndpointSuffix=core.windows.net'
     jwtSecret: jwtSecret != '' ? jwtSecret : 'bookr-jwt-secret-change-in-production-${uniqueString(resourceGroup().id)}'
   }
 }

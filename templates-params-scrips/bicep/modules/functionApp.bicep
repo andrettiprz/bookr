@@ -32,13 +32,12 @@ param jwtSecret string
 resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
   name: functionAppName
   location: location
-  kind: 'functionapp,linux'
+  kind: 'functionapp'
   properties: {
     serverFarmId: appServicePlanId != '' ? appServicePlanId : ''
     siteConfig: {
       use32BitWorkerProcess: false
-      alwaysOn: appServicePlanId != '' ? true : false
-      linuxFxVersion: 'NODE|18'
+      alwaysOn: false
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
