@@ -16,7 +16,7 @@
   "functionTimeout": "00:05:00",
   "cors": {
     "allowedOrigins": [
-      "https://orange-meadow-04657c61e.3.azurestaticapps.net",
+      "https://yellow-hill-0743d731e.3.azurestaticapps.net",
       "http://localhost:5173",
       "http://localhost:3000"
     ],

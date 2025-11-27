@@ -302,6 +302,16 @@ if [ $? -eq 0 ]; then
                 if func azure functionapp publish bookr-api --javascript 2>&1 | tee /tmp/func-deploy.log; then
                     DEPLOY_SUCCESS=true
                     echo -e "${GREEN}✅ Backend desplegado exitosamente.${NC}"
+                    
+                    # Configurar CORS después del despliegue
+                    echo -e "${YELLOW}Configurando CORS del backend...${NC}"
+                    STATIC_WEB_HOSTNAME=$(echo "$OUTPUTS" | jq -r '.staticWebAppUrl.value' 2>/dev/null || echo "")
+                    if [ -n "$STATIC_WEB_HOSTNAME" ] && [ "$STATIC_WEB_HOSTNAME" != "N/A" ]; then
+                        az functionapp cors remove --name bookr-api --resource-group "$RESOURCE_GROUP" --allowed-origins '*' 2>/dev/null || true
+                        az functionapp cors add --name bookr-api --resource-group "$RESOURCE_GROUP" --allowed-origins "https://$STATIC_WEB_HOSTNAME" 2>&1 > /dev/null
+                        az functionapp cors add --name bookr-api --resource-group "$RESOURCE_GROUP" --allowed-origins "http://localhost:5173" 2>&1 > /dev/null
+                        echo -e "${GREEN}✅ CORS configurado para Static Web App.${NC}"
+                    fi
                 else
                     RETRY_COUNT=$((RETRY_COUNT + 1))
                     if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
