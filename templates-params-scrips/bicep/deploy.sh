@@ -250,6 +250,8 @@ if [ $? -eq 0 ]; then
     echo -e "  ✅ SQL Server y Database"
     echo -e "  ✅ Azure Functions (API)"
     echo -e "  ✅ Static Web App"
+    echo -e "  ✅ Backend desplegado"
+    echo -e "  ✅ CORS configurado"
     echo ""
     if [ "$FUNCTION_URL" != "N/A" ]; then
         echo -e "${YELLOW}URLs importantes:${NC}"
@@ -259,6 +261,15 @@ if [ $? -eq 0 ]; then
         fi
         echo ""
     fi
+    
+    echo -e "${YELLOW}⏳ IMPORTANTE - Espera 2-3 minutos:${NC}"
+    echo -e "  1. GitHub Actions está compilando el frontend"
+    echo -e "  2. El Function App está sincronizándose"
+    echo -e "  3. La base de datos está inicializándose"
+    echo ""
+    echo -e "${YELLOW}📋 Verifica el estado en:${NC}"
+    echo -e "  • GitHub Actions: https://github.com/$(git config remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/actions"
+    echo ""
     
     # Desplegar código del backend automáticamente
     echo -e "${YELLOW}Desplegando código del backend...${NC}"
