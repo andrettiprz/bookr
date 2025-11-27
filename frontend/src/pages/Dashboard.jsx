@@ -1,4 +1,3 @@
-import { useAuth } from '../context/AuthContext'
 import { useReservations } from '../context/ReservationsContext'
 import Card from '../components/Card'
 import Button from '../components/Button'
@@ -8,7 +7,6 @@ import { useNavigate } from 'react-router-dom'
 import './Dashboard.css'
 
 export default function Dashboard() {
-  const { user } = useAuth()
   const { reservations, getUpcomingReservations, loading } = useReservations()
   const navigate = useNavigate()
 
