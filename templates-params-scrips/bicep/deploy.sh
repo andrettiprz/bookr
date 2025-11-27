@@ -16,7 +16,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Variables configurables
-RESOURCE_GROUP="${RESOURCE_GROUP:-bookr}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-bookr2}"
 LOCATION="${LOCATION:-westus2}"
 SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-}"
 PARAMETERS_FILE="${PARAMETERS_FILE:-main.parameters.json}"
