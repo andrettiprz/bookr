@@ -16,7 +16,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Variables configurables
-RESOURCE_GROUP="${RESOURCE_GROUP:-bookr-rg}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-bookr}"
 LOCATION="${LOCATION:-westus2}"
 SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-}"
 PARAMETERS_FILE="${PARAMETERS_FILE:-main.parameters.json}"
@@ -49,8 +49,28 @@ else
     az account set --subscription "$SUBSCRIPTION_ID"
 fi
 
-# Crear Resource Group si no existe
-echo -e "${YELLOW}Verificando Resource Group: ${RESOURCE_GROUP}...${NC}"
+# Crear Resource Group (siempre se crea desde cero)
+echo -e "${YELLOW}Creando/Verificando Resource Group: ${RESOURCE_GROUP}...${NC}"
+
+# Verificar si existe y eliminarlo si tiene recursos antiguos
+if az group show --name "$RESOURCE_GROUP" &> /dev/null; then
+    RESOURCE_COUNT=$(az resource list --resource-group "$RESOURCE_GROUP" --query "length(@)" -o tsv 2>/dev/null || echo "0")
+    if [ "$RESOURCE_COUNT" -gt 0 ]; then
+        echo -e "${YELLOW}El Resource Group existe y tiene recursos. Eliminando recursos antiguos...${NC}"
+        az group delete --name "$RESOURCE_GROUP" --yes --no-wait 2>/dev/null || true
+        echo -e "${YELLOW}Esperando a que se complete la eliminación...${NC}"
+        sleep 10
+        # Esperar hasta que el grupo esté disponible o no exista
+        for i in {1..30}; do
+            if ! az group show --name "$RESOURCE_GROUP" &> /dev/null; then
+                break
+            fi
+            sleep 2
+        done
+    fi
+fi
+
+# Crear Resource Group (si no existe o fue eliminado)
 if ! az group show --name "$RESOURCE_GROUP" &> /dev/null; then
     echo -e "${YELLOW}Creando Resource Group: ${RESOURCE_GROUP} en ${LOCATION}...${NC}"
     if ! az group create --name "$RESOURCE_GROUP" --location "$LOCATION" 2>&1; then
@@ -65,19 +85,27 @@ if ! az group show --name "$RESOURCE_GROUP" &> /dev/null; then
         echo "   ${GREEN}az account list --output table${NC}"
         echo "3. Cambia a otra suscripción si tienes una:"
         echo "   ${GREEN}az account set --subscription 'TU-SUBSCRIPTION-ID'${NC}"
-        echo "4. Si el Resource Group ya existe en otra suscripción, úsalo:"
-        echo "   ${GREEN}export RESOURCE_GROUP='nombre-del-rg-existente'${NC}"
         echo ""
         exit 1
     fi
-    echo -e "${GREEN}Resource Group creado exitosamente.${NC}"
+    echo -e "${GREEN}✅ Resource Group creado exitosamente.${NC}"
 else
-    echo -e "${GREEN}Resource Group ya existe.${NC}"
+    echo -e "${GREEN}✅ Resource Group listo.${NC}"
 fi
 
-# Solicitar contraseña de SQL si no está en los parámetros
+# Obtener contraseña de SQL desde parámetros o solicitar
 SQL_PASSWORD=""
-if grep -q '"sqlAdministratorPassword": null' "$PARAMETERS_FILE" 2>/dev/null || ! grep -q '"sqlAdministratorPassword"' "$PARAMETERS_FILE" 2>/dev/null || grep -q '"sqlAdministratorPassword".*null' "$PARAMETERS_FILE" 2>/dev/null; then
+if [ -f "$PARAMETERS_FILE" ]; then
+    # Intentar obtener la contraseña del archivo de parámetros
+    if command -v jq &> /dev/null; then
+        SQL_PASSWORD=$(jq -r '.parameters.sqlAdministratorPassword.value // empty' "$PARAMETERS_FILE" 2>/dev/null)
+    else
+        SQL_PASSWORD=$(grep -o '"sqlAdministratorPassword".*"value".*"[^"]*"' "$PARAMETERS_FILE" 2>/dev/null | grep -o '"[^"]*"$' | tr -d '"' || echo "")
+    fi
+fi
+
+# Si la contraseña está vacía o es null, solicitar
+if [ -z "$SQL_PASSWORD" ] || [ "$SQL_PASSWORD" = "null" ]; then
     echo ""
     echo -e "${YELLOW}Ingresa la contraseña para el administrador de SQL Server:${NC}"
     echo -e "${YELLOW}(La contraseña debe tener al menos 8 caracteres, mayúsculas, minúsculas, números y caracteres especiales)${NC}"
@@ -101,6 +129,23 @@ if grep -q '"sqlAdministratorPassword": null' "$PARAMETERS_FILE" 2>/dev/null || 
         fi
         PARAMETERS_FILE="$TEMP_PARAMS"
     fi
+else
+    echo -e "${GREEN}✅ Contraseña de SQL obtenida del archivo de parámetros.${NC}"
+fi
+
+# Verificar que JWT Secret esté configurado
+if [ -f "$PARAMETERS_FILE" ]; then
+    if command -v jq &> /dev/null; then
+        JWT_SECRET=$(jq -r '.parameters.jwtSecret.value // empty' "$PARAMETERS_FILE" 2>/dev/null)
+    else
+        JWT_SECRET=$(grep -o '"jwtSecret".*"value".*"[^"]*"' "$PARAMETERS_FILE" 2>/dev/null | grep -o '"[^"]*"$' | tr -d '"' || echo "")
+    fi
+    
+    if [ -n "$JWT_SECRET" ] && [ "$JWT_SECRET" != "null" ]; then
+        echo -e "${GREEN}✅ JWT Secret configurado.${NC}"
+    else
+        echo -e "${YELLOW}⚠️  JWT Secret no configurado, se generará automáticamente.${NC}"
+    fi
 fi
 
 # Desplegar infraestructura
@@ -111,12 +156,18 @@ echo ""
 
 DEPLOYMENT_NAME="bookr-deployment-$(date +%Y%m%d-%H%M%S)"
 
+echo -e "${GREEN}Desplegando recursos:${NC}"
+echo -e "  - Storage Account"
+echo -e "  - SQL Server y Database"
+echo -e "  - Azure Functions (API)"
+echo -e "  - Static Web App"
+echo ""
+
 az deployment group create \
     --resource-group "$RESOURCE_GROUP" \
     --template-file "main.bicep" \
     --parameters "@${PARAMETERS_FILE}" \
-    --name "$DEPLOYMENT_NAME" \
-    --verbose
+    --name "$DEPLOYMENT_NAME"
 
 if [ $? -eq 0 ]; then
     echo ""
@@ -127,16 +178,93 @@ if [ $? -eq 0 ]; then
     
     # Mostrar outputs
     echo -e "${YELLOW}Obteniendo información de los recursos desplegados...${NC}"
-    az deployment group show \
+    OUTPUTS=$(az deployment group show \
         --resource-group "$RESOURCE_GROUP" \
         --name "$DEPLOYMENT_NAME" \
         --query properties.outputs \
-        --output table
+        -o json)
+    
+    echo "$OUTPUTS" | jq -r 'to_entries[] | "\(.key): \(.value.value)"' 2>/dev/null || echo "$OUTPUTS"
+    
+    # Inicializar base de datos automáticamente
+    echo ""
+    echo -e "${YELLOW}Inicializando esquema de base de datos...${NC}"
+    SQL_SERVER=$(echo "$OUTPUTS" | jq -r '.sqlServerFqdn.value' 2>/dev/null | sed 's/.database.windows.net//')
+    SQL_DB=$(echo "$OUTPUTS" | jq -r '.databaseName.value' 2>/dev/null)
+    
+    if [ -n "$SQL_SERVER" ] && [ -n "$SQL_DB" ] && [ -n "$SQL_PASSWORD" ]; then
+        SQL_USER=$(jq -r '.parameters.sqlAdministratorLogin.value' "$PARAMETERS_FILE" 2>/dev/null || echo "bookradmin")
+        
+        # Esperar un momento para que SQL esté listo
+        echo -e "${YELLOW}Esperando a que SQL Server esté listo...${NC}"
+        sleep 15
+        
+        # Intentar inicializar BD usando Azure CLI
+        INIT_SCRIPT="$SCRIPT_DIR/scripts/init-database-azure.sh"
+        if [ -f "$INIT_SCRIPT" ]; then
+            chmod +x "$INIT_SCRIPT"
+            if "$INIT_SCRIPT" "$RESOURCE_GROUP" "$SQL_SERVER" "$SQL_DB" "$SQL_USER" "$SQL_PASSWORD"; then
+                echo -e "${GREEN}✅ Base de datos inicializada exitosamente.${NC}"
+            else
+                echo -e "${YELLOW}⚠️  La inicialización de BD falló. Puedes ejecutarla manualmente después.${NC}"
+            fi
+        else
+            # Intentar inicializar directamente con Azure CLI
+            SCHEMA_FILE="$SCRIPT_DIR/../../backend/database/schema.sql"
+            if [ -f "$SCHEMA_FILE" ]; then
+                echo -e "${YELLOW}Ejecutando script SQL directamente...${NC}"
+                az sql db execute \
+                    --resource-group "$RESOURCE_GROUP" \
+                    --server "$SQL_SERVER" \
+                    --database "$SQL_DB" \
+                    --file-path "$SCHEMA_FILE" \
+                    --admin-user "$SQL_USER" \
+                    --admin-password "$SQL_PASSWORD" 2>&1 && \
+                    echo -e "${GREEN}✅ Base de datos inicializada exitosamente.${NC}" || \
+                    echo -e "${YELLOW}⚠️  La inicialización de BD falló. Puedes ejecutarla manualmente después.${NC}"
+            else
+                echo -e "${YELLOW}⚠️  Archivo de esquema no encontrado. La BD necesita ser inicializada manualmente.${NC}"
+            fi
+        fi
+    else
+        echo -e "${YELLOW}⚠️  No se pudo obtener información de SQL. La BD necesita ser inicializada manualmente.${NC}"
+    fi
     
     # Limpiar archivo temporal si existe
     if [ -n "$TEMP_PARAMS" ] && [ -f "$TEMP_PARAMS" ]; then
         rm "$TEMP_PARAMS"
     fi
+    
+    # Mostrar URLs importantes
+    FUNCTION_URL=$(echo "$OUTPUTS" | jq -r '.functionAppUrl.value' 2>/dev/null || echo "N/A")
+    STATIC_WEB_URL=$(echo "$OUTPUTS" | jq -r '.staticWebAppUrl.value' 2>/dev/null || echo "N/A")
+    
+    echo ""
+    echo -e "${GREEN}========================================${NC}"
+    echo -e "${GREEN}✅ DESPLIEGUE COMPLETO EXITOSO${NC}"
+    echo -e "${GREEN}========================================${NC}"
+    echo ""
+    echo -e "${YELLOW}Recursos desplegados:${NC}"
+    echo -e "  ✅ Resource Group: ${RESOURCE_GROUP}"
+    echo -e "  ✅ Storage Account"
+    echo -e "  ✅ SQL Server y Database"
+    echo -e "  ✅ Azure Functions (API)"
+    echo -e "  ✅ Static Web App"
+    echo ""
+    if [ "$FUNCTION_URL" != "N/A" ]; then
+        echo -e "${YELLOW}URLs importantes:${NC}"
+        echo -e "  📡 API Backend: ${FUNCTION_URL}"
+        if [ "$STATIC_WEB_URL" != "N/A" ]; then
+            echo -e "  🌐 Frontend: https://${STATIC_WEB_URL}"
+        fi
+        echo ""
+    fi
+    echo -e "${YELLOW}Próximos pasos:${NC}"
+    echo "1. Espera 2-5 minutos para que Static Web App complete el build automático"
+    echo "2. Verifica que el workflow de GitHub Actions se ejecute correctamente"
+    echo "3. Despliega el código de Functions:"
+    echo "   ${GREEN}cd ../../backend && npm install && func azure functionapp publish bookr-api${NC}"
+    echo ""
 else
     echo ""
     echo -e "${RED}========================================${NC}"

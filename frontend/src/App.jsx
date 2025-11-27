@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { ReservationsProvider } from './context/ReservationsContext'
+import { ThemeProvider } from './context/ThemeContext'
+import { ToastProvider } from './context/ToastContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Header from './components/Header'
 import Login from './pages/Login'
@@ -15,13 +17,15 @@ import './styles.css'
 
 function App() {
   return (
-    <AuthProvider>
-      <ReservationsProvider>
-        <BrowserRouter>
-          <div className="app">
-            <Header />
-            <main className="main-content">
-              <Routes>
+    <ThemeProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <ReservationsProvider>
+            <BrowserRouter>
+              <div className="app">
+                <Header />
+                <main className="main-content">
+                  <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route 
@@ -87,6 +91,8 @@ function App() {
         </BrowserRouter>
       </ReservationsProvider>
     </AuthProvider>
+      </ToastProvider>
+    </ThemeProvider>
   )
 }
 

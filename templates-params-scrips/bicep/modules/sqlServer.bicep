@@ -41,8 +41,8 @@ param readScaleOut string = 'Disabled'
 @description('Number of replicas')
 param numberOfReplicas int = 0
 
-@description('Min capacity')
-param minCapacity string = '0.5'
+@description('Min capacity (use 0 to disable)')
+param minCapacity int = 0
 
 @description('Auto pause delay in minutes')
 param autoPauseDelay int = 60
@@ -159,7 +159,7 @@ resource database 'Microsoft.Sql/servers/databases@2023-05-01-preview' = {
     licenseType: licenseType != '' ? licenseType : null
     readScale: readScaleOut
     highAvailabilityReplicaCount: numberOfReplicas
-    minCapacity: minCapacity != '' ? minCapacity : null
+    minCapacity: minCapacity > 0 ? minCapacity : null
     autoPauseDelay: autoPauseDelay
     requestedBackupStorageRedundancy: requestedBackupStorageRedundancy
     isLedgerOn: enableSqlLedger
@@ -200,12 +200,12 @@ resource advancedThreatProtection 'Microsoft.Sql/servers/advancedThreatProtectio
 }
 
 // Vulnerability Assessment
-resource vulnerabilityAssessment 'Microsoft.Sql/servers/vulnerabilityAssessments@2018-06-01-preview' = if (enableVA) {
+resource vulnerabilityAssessment 'Microsoft.Sql/servers/vulnerabilityAssessments@2018-06-01-preview' = if (enableVA && !useVAManagedIdentity) {
   parent: sqlServer
   name: 'Default'
   properties: {
-    storageContainerPath: enableVA ? '${vaStorageAccount.properties.primaryEndpoints.blob}vulnerability-assessment' : ''
-    storageAccountAccessKey: (enableVA && !useVAManagedIdentity) ? listKeys(vaStorageAccount.id, vaStorageAccount.apiVersion).keys[0].value : ''
+    storageContainerPath: '${vaStorageAccount.properties.primaryEndpoints.blob}vulnerability-assessment'
+    storageAccountAccessKey: vaStorageAccount.listKeys().keys[0].value
     recurringScans: {
       isEnabled: true
       emailSubscriptionAdmins: false

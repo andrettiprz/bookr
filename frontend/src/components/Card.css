@@ -1,18 +1,131 @@
+/* Card - Swiss Minimalist Style */
 .card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.2s ease;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-xs);
+  transition: all var(--transition-base);
+  overflow: hidden;
 }
 
 .card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Card Variants */
+.card-elevated {
+  box-shadow: var(--shadow-md);
+}
+
+.card-elevated:hover {
+  box-shadow: var(--shadow-lg);
   transform: translateY(-2px);
 }
 
-.card-clickable {
-  cursor: pointer;
+.card-bordered {
+  border: 2px solid var(--gray-200);
+  box-shadow: none;
 }
 
+.card-bordered:hover {
+  border-color: var(--gray-300);
+}
+
+.card-glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur) var(--backdrop-saturate);
+  -webkit-backdrop-filter: var(--backdrop-blur) var(--backdrop-saturate);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Card Padding Variants */
+.card-sm {
+  padding: var(--space-md);
+}
+
+.card-lg {
+  padding: var(--space-2xl);
+}
+
+.card-no-padding {
+  padding: 0;
+}
+
+/* Card with Accent Border */
+.card-accent {
+  border-top: 3px solid var(--accent);
+}
+
+.card-success {
+  border-top: 3px solid var(--success);
+}
+
+.card-warning {
+  border-top: 3px solid var(--warning);
+}
+
+.card-error {
+  border-top: 3px solid var(--error);
+}
+
+/* Interactive Card */
+.card-interactive {
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--gray-300);
+}
+
+.card-interactive:active {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Card Header */
+.card-header {
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--gray-200);
+  margin: calc(var(--space-xl) * -1);
+  margin-bottom: var(--space-xl);
+}
+
+.card-header h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+/* Card Footer */
+.card-footer {
+  padding: var(--space-lg);
+  border-top: 1px solid var(--gray-200);
+  margin: var(--space-xl) calc(var(--space-xl) * -1) calc(var(--space-xl) * -1);
+  background: var(--gray-50);
+}
+
+/* Dark Theme */
+[data-theme="dark"] .card {
+  background: var(--gray-100);
+  border-color: var(--gray-200);
+}
+
+[data-theme="dark"] .card:hover {
+  border-color: var(--gray-300);
+}
+
+[data-theme="dark"] .card-header,
+[data-theme="dark"] .card-footer {
+  border-color: var(--gray-200);
+  background: var(--gray-50);
+}
+
+[data-theme="dark"] .card-glass {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+}

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useReservations } from '../context/ReservationsContext'
+import { useToast } from '../context/ToastContext'
 import Card from '../components/Card'
 import Button from '../components/Button'
+import { CategorySelect } from '../components/CategoryTag'
 import './ReservationForm.css'
 
 export default function ReservationForm() {
@@ -13,6 +15,8 @@ export default function ReservationForm() {
 
   const existingReservation = id ? reservations.find(r => r.id === id) : null
 
+  const { success, error: showError } = useToast()
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -21,6 +25,7 @@ export default function ReservationForm() {
     duration: 60,
     location: '',
     status: 'pending',
+    category: '',
     attendees: []
   })
 
@@ -36,6 +41,7 @@ export default function ReservationForm() {
         duration: existingReservation.duration || 60,
         location: existingReservation.location || '',
         status: existingReservation.status || 'pending',
+        category: existingReservation.category || '',
         attendees: existingReservation.attendees || []
       })
     } else {
@@ -74,16 +80,21 @@ export default function ReservationForm() {
     }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (isEdit) {
-      updateReservation(id, formData)
-    } else {
-      addReservation(formData)
+    try {
+      if (isEdit) {
+        await updateReservation(id, formData)
+        success('Reserva actualizada exitosamente')
+      } else {
+        await addReservation(formData)
+        success('Reserva creada exitosamente')
+      }
+      navigate('/reservations')
+    } catch (err) {
+      showError(err.message || 'Error al guardar la reserva')
     }
-    
-    navigate('/reservations')
   }
 
   return (
@@ -188,6 +199,14 @@ export default function ReservationForm() {
               onChange={handleChange}
               required
               placeholder="Ej: Oficina Principal, Sala de Conferencias"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="category">Categoría</label>
+            <CategorySelect 
+              value={formData.category} 
+              onChange={(category) => setFormData(prev => ({ ...prev, category }))}
             />
           </div>
 

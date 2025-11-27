@@ -8,9 +8,6 @@
     "storageAccountName": {
       "value": "bookrblobst"
     },
-    "appServicePlanName": {
-      "value": "bookr-app-service"
-    },
     "sqlServerName": {
       "value": "bookr-sql-server"
     },
@@ -23,6 +20,9 @@
     "sqlAdministratorPassword": {
       "value": "Bookr@2024!SQL"
     },
+    "jwtSecret": {
+      "value": "Bookr2024JWTSecretKey!ChangeInProduction"
+    },
     "staticWebAppName": {
       "value": "bookr-static-web-app"
     },
@@ -34,6 +34,9 @@
     },
     "staticWebAppRepositoryToken": {
       "value": null
+    },
+    "functionAppName": {
+      "value": "bookr-api"
     }
   }
 }

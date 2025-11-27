@@ -4,8 +4,8 @@ param location string = 'westus2'
 @description('Storage account name')
 param storageAccountName string = 'bookrblobst'
 
-@description('App Service Plan name')
-param appServicePlanName string = 'bookr-app-service'
+// App Service Plan name (comentado - no se usa actualmente)
+// param appServicePlanName string = 'bookr-app-service'
 
 @description('SQL Server name')
 param sqlServerName string = 'bookr-sql-server'
@@ -32,6 +32,13 @@ param staticWebAppBranch string = 'main'
 @description('Static Web App repository token (optional)')
 @secure()
 param staticWebAppRepositoryToken string = ''
+
+@description('Function App name')
+param functionAppName string = 'bookr-api'
+
+@description('JWT Secret for authentication')
+@secure()
+param jwtSecret string = ''
 
 // Storage Account Module
 module storageAccount 'modules/storage.bicep' = {
@@ -100,7 +107,7 @@ module sqlServer 'modules/sqlServer.bicep' = {
     licenseType: ''
     readScaleOut: 'Disabled'
     numberOfReplicas: 0
-    minCapacity: '0.5'
+    minCapacity: 1
     autoPauseDelay: 60
     allowAzureIps: false
     enableADS: false
@@ -143,6 +150,22 @@ module staticWebApp 'modules/staticWebApp.bicep' = {
   }
 }
 
+// Function App Module (Consumption Plan - Serverless)
+module functionApp 'modules/functionApp.bicep' = {
+  name: 'functionAppDeployment'
+  params: {
+    functionAppName: functionAppName
+    appServicePlanId: ''
+    location: location
+    sqlServerFqdn: sqlServer.outputs.sqlServerFqdn
+    sqlDatabaseName: sqlDatabaseName
+    sqlUser: sqlAdministratorLogin
+    sqlPassword: sqlAdministratorPassword
+    storageConnectionString: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.outputs.storageAccountName};EndpointSuffix=core.windows.net'
+    jwtSecret: jwtSecret != '' ? jwtSecret : 'bookr-jwt-secret-change-in-production-${uniqueString(resourceGroup().id)}'
+  }
+}
+
 // Outputs
 output storageAccountName string = storageAccount.outputs.storageAccountName
 output storageAccountId string = storageAccount.outputs.storageAccountId
@@ -153,4 +176,6 @@ output sqlServerFqdn string = sqlServer.outputs.sqlServerFqdn
 output databaseName string = sqlServer.outputs.databaseName
 output staticWebAppName string = staticWebApp.outputs.staticWebAppName
 output staticWebAppUrl string = staticWebApp.outputs.defaultHostname
+output functionAppName string = functionApp.outputs.functionAppName
+output functionAppUrl string = functionApp.outputs.functionAppUrl
 

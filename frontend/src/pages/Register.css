@@ -1,114 +1,27 @@
-.register-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
-  background-size: 200% 200%;
-  animation: gradientShift 15s ease infinite;
-  padding: 2rem;
-}
+/* Register - Inherits from Login */
+@import './Login.css';
 
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+.register-container {
+  composes: login-container;
 }
 
 .register-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  padding: 3rem;
-  width: 100%;
-  max-width: 450px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  composes: login-card;
+  max-width: 480px;
 }
 
 .register-header {
-  text-align: center;
-  margin-bottom: 2rem;
+  composes: login-header;
 }
 
 .register-icon {
-  font-size: 4rem;
-  display: block;
-  margin-bottom: 1rem;
-}
-
-.register-header h1 {
-  font-size: 2rem;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-  font-weight: 800;
-}
-
-.register-header p {
-  color: #6b7280;
-  font-size: 1rem;
+  composes: login-icon;
 }
 
 .register-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  color: #374151;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.form-group input {
-  padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: all 0.2s ease;
-  font-family: inherit;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.error-message {
-  background: #fee2e2;
-  color: #dc2626;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  border: 1px solid #fecaca;
-}
-
-.register-button {
-  width: 100%;
-  margin-top: 0.5rem;
+  composes: login-form;
 }
 
 .register-footer {
-  margin-top: 2rem;
-  text-align: center;
-  color: #6b7280;
-  font-size: 0.95rem;
+  composes: login-footer;
 }
-
-.register-footer a {
-  color: #6366f1;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.register-footer a:hover {
-  text-decoration: underline;
-}
-

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import api from '../services/api'
 
 const AuthContext = createContext(null)
 
@@ -7,42 +8,49 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simular carga de usuario desde localStorage
+    // Verificar si hay token guardado
+    const token = localStorage.getItem('bookr_token')
     const savedUser = localStorage.getItem('bookr_user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
+    
+    if (token && savedUser) {
+      try {
+        const userData = JSON.parse(savedUser)
+        api.setToken(token)
+        setUser(userData)
+      } catch (err) {
+        console.error('Error loading user:', err)
+        localStorage.removeItem('bookr_token')
+        localStorage.removeItem('bookr_user')
+      }
     }
     setLoading(false)
   }, [])
 
-  const login = (email, password) => {
-    // Simulación de login - en producción esto sería una llamada API
-    const mockUser = {
-      id: '1',
-      name: 'Juan Pérez',
-      email: email,
-      avatar: '👤'
+  const login = async (email, password) => {
+    try {
+      const data = await api.login(email, password)
+      setUser(data.user)
+      localStorage.setItem('bookr_user', JSON.stringify(data.user))
+      return data.user
+    } catch (error) {
+      throw new Error(error.message || 'Error al iniciar sesión')
     }
-    setUser(mockUser)
-    localStorage.setItem('bookr_user', JSON.stringify(mockUser))
-    return Promise.resolve(mockUser)
   }
 
-  const register = (name, email, password) => {
-    // Simulación de registro
-    const mockUser = {
-      id: Date.now().toString(),
-      name: name,
-      email: email,
-      avatar: '👤'
+  const register = async (name, email, password) => {
+    try {
+      const data = await api.register(email, password, name)
+      setUser(data.user)
+      localStorage.setItem('bookr_user', JSON.stringify(data.user))
+      return data.user
+    } catch (error) {
+      throw new Error(error.message || 'Error al registrarse')
     }
-    setUser(mockUser)
-    localStorage.setItem('bookr_user', JSON.stringify(mockUser))
-    return Promise.resolve(mockUser)
   }
 
   const logout = () => {
     setUser(null)
+    api.logout()
     localStorage.removeItem('bookr_user')
   }
 
@@ -60,4 +68,3 @@ export function useAuth() {
   }
   return context
 }
-

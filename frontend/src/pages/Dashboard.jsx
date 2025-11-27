@@ -2,12 +2,14 @@ import { useAuth } from '../context/AuthContext'
 import { useReservations } from '../context/ReservationsContext'
 import Card from '../components/Card'
 import Button from '../components/Button'
+import StatsChart from '../components/StatsChart'
+import { SkeletonCard, SkeletonList } from '../components/Skeleton'
 import { useNavigate } from 'react-router-dom'
 import './Dashboard.css'
 
 export default function Dashboard() {
   const { user } = useAuth()
-  const { reservations, getUpcomingReservations } = useReservations()
+  const { reservations, getUpcomingReservations, loading } = useReservations()
   const navigate = useNavigate()
 
   const upcoming = getUpcomingReservations().slice(0, 5)
@@ -22,6 +24,37 @@ export default function Dashboard() {
     upcoming: upcoming.length,
     confirmed: reservations.filter(r => r.status === 'confirmed').length
   }
+
+  // Estadísticas por mes (últimos 6 meses)
+  const monthlyStats = (() => {
+    const months = []
+    const now = new Date()
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthName = date.toLocaleDateString('es-MX', { month: 'short' })
+      const count = reservations.filter(r => {
+        const resDate = new Date(r.date)
+        return resDate.getMonth() === date.getMonth() && 
+               resDate.getFullYear() === date.getFullYear()
+      }).length
+      months.push({ label: monthName, value: count })
+    }
+    return months
+  })()
+
+  // Estadísticas por estado
+  const statusStats = [
+    { 
+      label: 'Confirmadas', 
+      value: reservations.filter(r => r.status === 'confirmed').length,
+      color: 'var(--success)'
+    },
+    { 
+      label: 'Pendientes', 
+      value: reservations.filter(r => r.status === 'pending').length,
+      color: 'var(--warning)'
+    }
+  ]
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
@@ -48,7 +81,14 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <div className="stats-grid">
+      {loading ? (
+        <div className="stats-grid">
+          {[1, 2, 3, 4].map(i => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="stats-grid">
         <Card className="stat-card stat-primary">
           <div className="stat-icon">📅</div>
           <div className="stat-content">
@@ -81,6 +121,25 @@ export default function Dashboard() {
           </div>
         </Card>
       </div>
+      )}
+
+      <div className="dashboard-charts">
+        <Card className="chart-card glass-card">
+          <StatsChart 
+            data={monthlyStats} 
+            title="Reservas por mes (Últimos 6 meses)" 
+            type="bar"
+          />
+        </Card>
+        
+        <Card className="chart-card glass-card">
+          <StatsChart 
+            data={statusStats} 
+            title="Distribución por estado" 
+            type="donut"
+          />
+        </Card>
+      </div>
 
       <div className="dashboard-content">
         <Card className="upcoming-section">
@@ -95,7 +154,9 @@ export default function Dashboard() {
             </Button>
           </div>
 
-          {upcoming.length === 0 ? (
+          {loading ? (
+            <SkeletonList />
+          ) : upcoming.length === 0 ? (
             <div className="empty-state">
               <span className="empty-icon">📭</span>
               <p>No tienes reservas próximas</p>
@@ -131,9 +192,11 @@ export default function Dashboard() {
           )}
         </Card>
 
-        <Card className="today-section">
+        <Card className="today-section glass-card">
           <h2>Reservas de Hoy</h2>
-          {todayReservations.length === 0 ? (
+          {loading ? (
+            <SkeletonList />
+          ) : todayReservations.length === 0 ? (
             <div className="empty-state">
               <span className="empty-icon">✨</span>
               <p>No tienes reservas programadas para hoy</p>

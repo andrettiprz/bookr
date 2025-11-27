@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ThemeToggle from './ThemeToggle'
 import './Header.css'
 
 export default function Header() {
@@ -28,17 +29,20 @@ export default function Header() {
           </nav>
         )}
         
-        {user && (
-          <div className="user-menu">
-            <div className="user-info">
-              <span className="user-avatar">{user.avatar}</span>
-              <span className="user-name">{user.name}</span>
+        <div className="header-actions">
+          <ThemeToggle />
+          {user && (
+            <div className="user-menu">
+              <div className="user-info">
+                <span className="user-avatar">{user.avatar}</span>
+                <span className="user-name">{user.name}</span>
+              </div>
+              <button onClick={handleLogout} className="logout-btn">
+                Salir
+              </button>
             </div>
-            <button onClick={handleLogout} className="logout-btn">
-              Salir
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </header>
   )

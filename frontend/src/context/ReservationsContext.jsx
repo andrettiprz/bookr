@@ -1,73 +1,115 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import api from '../services/api'
+import { useAuth } from './AuthContext'
 
 const ReservationsContext = createContext(null)
 
 export function ReservationsProvider({ children }) {
-  const [reservations, setReservations] = useState(() => {
-    // Datos mock iniciales
-    const saved = localStorage.getItem('bookr_reservations')
-    if (saved) {
-      return JSON.parse(saved)
-    }
-    return [
-      {
-        id: '1',
-        title: 'Reunión con Cliente',
-        description: 'Revisión de proyecto y próximos pasos',
-        date: new Date(Date.now() + 86400000).toISOString(),
-        time: '10:00',
-        duration: 60,
-        status: 'confirmed',
-        location: 'Oficina Principal',
-        attendees: ['Cliente ABC', 'Equipo de Desarrollo']
-      },
-      {
-        id: '2',
-        title: 'Consulta Médica',
-        description: 'Chequeo anual',
-        date: new Date(Date.now() + 172800000).toISOString(),
-        time: '14:30',
-        duration: 30,
-        status: 'pending',
-        location: 'Clínica San José',
-        attendees: []
-      },
-      {
-        id: '3',
-        title: 'Presentación de Proyecto',
-        description: 'Demo del nuevo sistema',
-        date: new Date(Date.now() + 259200000).toISOString(),
-        time: '16:00',
-        duration: 90,
-        status: 'confirmed',
-        location: 'Sala de Conferencias',
-        attendees: ['Equipo Directivo', 'Stakeholders']
-      }
-    ]
-  })
+  const { user } = useAuth()
+  const [reservations, setReservations] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    localStorage.setItem('bookr_reservations', JSON.stringify(reservations))
-  }, [reservations])
-
-  const addReservation = (reservation) => {
-    const newReservation = {
-      ...reservation,
-      id: Date.now().toString(),
-      status: reservation.status || 'pending'
+    if (user) {
+      loadReservations()
+    } else {
+      setReservations([])
     }
-    setReservations([...reservations, newReservation])
-    return newReservation
+  }, [user])
+
+  const loadReservations = async () => {
+    if (!user) return
+    
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await api.getReservations()
+      // Transformar datos de la API al formato del frontend
+      const transformed = data.reservations.map(r => ({
+        id: r.Id,
+        title: r.Title,
+        description: r.Description,
+        date: r.Date,
+        time: r.Time,
+        duration: r.Duration,
+        location: r.Location,
+        status: r.Status,
+        color: r.Color,
+        imageUrl: r.ImageUrl,
+        attendees: r.attendees || []
+      }))
+      setReservations(transformed)
+    } catch (err) {
+      console.error('Error loading reservations:', err)
+      setError(err.message)
+      // Fallback a localStorage si la API falla
+      const saved = localStorage.getItem('bookr_reservations')
+      if (saved) {
+        setReservations(JSON.parse(saved))
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const updateReservation = (id, updates) => {
-    setReservations(reservations.map(r => 
-      r.id === id ? { ...r, ...updates } : r
-    ))
+  const addReservation = async (reservation) => {
+    try {
+      const data = await api.createReservation({
+        title: reservation.title,
+        description: reservation.description,
+        date: reservation.date,
+        time: reservation.time,
+        duration: reservation.duration || 60,
+        location: reservation.location,
+        status: reservation.status || 'pending',
+        color: reservation.color,
+        imageUrl: reservation.imageUrl,
+        attendees: reservation.attendees || []
+      })
+      
+      const newReservation = {
+        id: data.reservation.Id,
+        title: data.reservation.Title,
+        description: data.reservation.Description,
+        date: data.reservation.Date,
+        time: data.reservation.Time,
+        duration: data.reservation.Duration,
+        location: data.reservation.Location,
+        status: data.reservation.Status,
+        color: data.reservation.Color,
+        imageUrl: data.reservation.ImageUrl,
+        attendees: data.reservation.attendees || []
+      }
+      
+      setReservations([...reservations, newReservation])
+      return newReservation
+    } catch (err) {
+      console.error('Error creating reservation:', err)
+      throw err
+    }
   }
 
-  const deleteReservation = (id) => {
-    setReservations(reservations.filter(r => r.id !== id))
+  const updateReservation = async (id, updates) => {
+    try {
+      await api.updateReservation(id, updates)
+      setReservations(reservations.map(r => 
+        r.id === id ? { ...r, ...updates } : r
+      ))
+    } catch (err) {
+      console.error('Error updating reservation:', err)
+      throw err
+    }
+  }
+
+  const deleteReservation = async (id) => {
+    try {
+      await api.deleteReservation(id)
+      setReservations(reservations.filter(r => r.id !== id))
+    } catch (err) {
+      console.error('Error deleting reservation:', err)
+      throw err
+    }
   }
 
   const getReservationsByDate = (date) => {
@@ -80,18 +122,28 @@ export function ReservationsProvider({ children }) {
   const getUpcomingReservations = () => {
     const now = new Date()
     return reservations
-      .filter(r => new Date(r.date + 'T' + r.time) > now)
-      .sort((a, b) => new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time))
+      .filter(r => {
+        const reservationDateTime = new Date(`${r.date}T${r.time}`)
+        return reservationDateTime > now
+      })
+      .sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.time}`)
+        const dateB = new Date(`${b.date}T${b.time}`)
+        return dateA - dateB
+      })
   }
 
   return (
     <ReservationsContext.Provider value={{
       reservations,
+      loading,
+      error,
       addReservation,
       updateReservation,
       deleteReservation,
       getReservationsByDate,
-      getUpcomingReservations
+      getUpcomingReservations,
+      refreshReservations: loadReservations
     }}>
       {children}
     </ReservationsContext.Provider>
@@ -105,4 +157,3 @@ export function useReservations() {
   }
   return context
 }
-
