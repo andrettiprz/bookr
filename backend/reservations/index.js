@@ -21,45 +21,67 @@ module.exports = async function (context, req) {
         return;
     }
 
+    // Headers comunes para todas las respuestas
+    const commonHeaders = {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+    };
+
     try {
         // GET - Obtener todas las reservaciones
         if (req.method === 'GET' && !req.query.id) {
-            const reservations = await query(`
-                SELECT 
-                    r.Id, r.Title, r.Description, r.Date, r.Time, r.Duration,
-                    r.Location, r.Status, r.Color, r.ImageUrl, r.CreatedAt, r.UpdatedAt
-                FROM [dbo].[Reservations] r
-                WHERE r.UserId = @userId
-                ORDER BY r.Date DESC, r.Time DESC
-            `, {
-                userId: { type: mssql.UniqueIdentifier, value: DEMO_USER_ID }
-            });
-
-            // Get attendees for each reservation
-            for (let reservation of reservations) {
-                const attendees = await query(`
-                    SELECT Name, Email
-                    FROM [dbo].[ReservationAttendees]
-                    WHERE ReservationId = @reservationId
+            context.log('Obteniendo reservaciones...');
+            
+            try {
+                const reservations = await query(`
+                    SELECT 
+                        r.Id, r.Title, r.Description, r.Date, r.Time, r.Duration,
+                        r.Location, r.Status, r.Color, r.ImageUrl, r.CreatedAt, r.UpdatedAt
+                    FROM [dbo].[Reservations] r
+                    WHERE r.UserId = @userId
+                    ORDER BY r.Date DESC, r.Time DESC
                 `, {
-                    reservationId: { type: mssql.UniqueIdentifier, value: reservation.Id }
+                    userId: { type: mssql.UniqueIdentifier, value: DEMO_USER_ID }
                 });
-                reservation.attendees = attendees;
-            }
 
-            context.res = {
-                status: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                body: JSON.stringify({ reservations })
-            };
+                context.log(`Encontradas ${reservations.length} reservaciones`);
+
+                // Get attendees for each reservation
+                for (let reservation of reservations) {
+                    try {
+                        const attendees = await query(`
+                            SELECT Name, Email
+                            FROM [dbo].[ReservationAttendees]
+                            WHERE ReservationId = @reservationId
+                        `, {
+                            reservationId: { type: mssql.UniqueIdentifier, value: reservation.Id }
+                        });
+                        reservation.attendees = attendees;
+                    } catch (attendeesErr) {
+                        context.log('Error obteniendo attendees:', attendeesErr.message);
+                        reservation.attendees = [];
+                    }
+                }
+
+                context.res = {
+                    status: 200,
+                    headers: commonHeaders,
+                    body: JSON.stringify({ reservations })
+                };
+            } catch (queryErr) {
+                context.log.error('Error en query:', queryErr.message);
+                context.res = {
+                    status: 200,
+                    headers: commonHeaders,
+                    body: JSON.stringify({ reservations: [] })
+                };
+            }
             return;
         }
 
         // POST - Crear nueva reservación
         if (req.method === 'POST') {
+            context.log('Creando reservación...');
             const { title, description, date, time, duration, location, status, color, imageUrl, attendees } = req.body || {};
 
             const result = await query(`
@@ -83,6 +105,7 @@ module.exports = async function (context, req) {
             });
 
             const reservation = result[0];
+            context.log('Reservación creada:', reservation.Id);
 
             // Add attendees
             if (attendees && attendees.length > 0) {
@@ -110,10 +133,7 @@ module.exports = async function (context, req) {
 
             context.res = {
                 status: 201,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
+                headers: commonHeaders,
                 body: JSON.stringify({ reservation })
             };
             return;
@@ -125,10 +145,7 @@ module.exports = async function (context, req) {
             if (!reservationId) {
                 context.res = {
                     status: 400,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
+                    headers: commonHeaders,
                     body: JSON.stringify({ error: 'Reservation ID is required' })
                 };
                 return;
@@ -191,10 +208,7 @@ module.exports = async function (context, req) {
             if (result.length === 0) {
                 context.res = {
                     status: 404,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
+                    headers: commonHeaders,
                     body: JSON.stringify({ error: 'Reservation not found' })
                 };
                 return;
@@ -202,10 +216,7 @@ module.exports = async function (context, req) {
 
             context.res = {
                 status: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
+                headers: commonHeaders,
                 body: JSON.stringify({ reservation: result[0] })
             };
             return;
@@ -217,10 +228,7 @@ module.exports = async function (context, req) {
             if (!reservationId) {
                 context.res = {
                     status: 400,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
+                    headers: commonHeaders,
                     body: JSON.stringify({ error: 'Reservation ID is required' })
                 };
                 return;
@@ -236,10 +244,7 @@ module.exports = async function (context, req) {
 
             context.res = {
                 status: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
+                headers: commonHeaders,
                 body: JSON.stringify({ message: 'Reservation deleted successfully' })
             };
             return;
@@ -248,21 +253,20 @@ module.exports = async function (context, req) {
         // Método no soportado
         context.res = {
             status: 405,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
+            headers: commonHeaders,
             body: JSON.stringify({ error: 'Method not allowed' })
         };
     } catch (err) {
-        context.log.error('Reservations error:', err);
+        context.log.error('Reservations error:', err.message);
+        context.log.error('Stack:', err.stack);
         context.res = {
             status: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({ error: 'Internal server error' })
+            headers: commonHeaders,
+            body: JSON.stringify({ 
+                error: 'Internal server error',
+                message: err.message,
+                details: err.toString()
+            })
         };
     }
 };
