@@ -140,14 +140,14 @@ class ApiService {
     this.setToken(null);
   }
 
-  // Reservations - Local Mode
+  // Reservations
   async getReservations() {
     if (this.localMode) {
       const reservations = JSON.parse(localStorage.getItem('bookr_reservations') || '[]');
       return { reservations };
     }
     
-    return this.request('/getReservations', {
+    return this.request('/reservations', {
       method: 'GET',
     });
   }
@@ -177,7 +177,7 @@ class ApiService {
       return { reservation: newReservation };
     }
     
-    return this.request('/createReservation', {
+    return this.request('/reservations', {
       method: 'POST',
       body: JSON.stringify(reservation),
     });
@@ -198,7 +198,7 @@ class ApiService {
       return { reservation: reservations[index] };
     }
     
-    return this.request(`/updateReservation?id=${id}`, {
+    return this.request(`/reservations?id=${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
@@ -213,7 +213,7 @@ class ApiService {
       return { success: true };
     }
     
-    return this.request(`/deleteReservation?id=${id}`, {
+    return this.request(`/reservations?id=${id}`, {
       method: 'DELETE',
     });
   }
