@@ -11,16 +11,8 @@
   },
   "extensionBundle": {
     "id": "Microsoft.Azure.Functions.ExtensionBundle",
-    "version": "[4.*, 5.0.0)"
+    "version": "[3.*, 4.0.0)"
   },
-  "functionTimeout": "00:05:00",
-  "cors": {
-    "allowedOrigins": [
-      "https://yellow-hill-0743d731e.3.azurestaticapps.net",
-      "http://localhost:5173",
-      "http://localhost:3000"
-    ],
-    "supportCredentials": true
-  }
+  "functionTimeout": "00:05:00"
 }
 
