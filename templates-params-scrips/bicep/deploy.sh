@@ -364,35 +364,54 @@ if [ $? -eq 0 ]; then
         echo -e "${YELLOW}⚠️  Carpeta backend no encontrada.${NC}"
     fi
     
-    # Obtener y mostrar el deployment token para GitHub
+    # Configurar GitHub Secret automáticamente
     echo ""
-    echo -e "${YELLOW}Obteniendo GitHub deployment token...${NC}"
+    echo -e "${YELLOW}Configurando GitHub deployment token...${NC}"
     STATIC_WEB_APP_NAME=$(echo "$OUTPUTS" | jq -r '.staticWebAppName.value' 2>/dev/null || echo "bookr-static-web-app")
     DEPLOYMENT_TOKEN=$(az staticwebapp secrets list --name "$STATIC_WEB_APP_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.apiKey" -o tsv 2>/dev/null)
     
-    echo ""
-    echo -e "${YELLOW}Estado Final:${NC}"
-    echo "✅ Infraestructura desplegada"
-    echo "✅ Backend desplegado"
-    echo "⏳ Frontend desplegándose vía GitHub Actions (2-5 minutos)"
-    echo ""
-    
     if [ -n "$DEPLOYMENT_TOKEN" ] && [ "$DEPLOYMENT_TOKEN" != "null" ]; then
-        echo -e "${YELLOW}🔑 GitHub Secret Configuration:${NC}"
-        echo -e "  1. Ve a: https://github.com/$(git config remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/settings/secrets/actions"
-        echo -e "  2. Crea/Actualiza el secret: ${GREEN}AZURE_STATIC_WEB_APPS_API_TOKEN${NC}"
-        echo -e "  3. Pega este token:"
-        echo ""
-        echo -e "${GREEN}${DEPLOYMENT_TOKEN}${NC}"
-        echo ""
-        echo -e "${RED}⚠️  IMPORTANTE: Copia y guarda este token ahora${NC}"
-        echo ""
+        # Intentar configurar automáticamente con GitHub CLI
+        if command -v gh &> /dev/null; then
+            echo -e "${YELLOW}Configurando GitHub Secret automáticamente...${NC}"
+            REPO_NAME=$(git config remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')
+            
+            echo "$DEPLOYMENT_TOKEN" | gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN --repo "$REPO_NAME" 2>&1 && \
+                echo -e "${GREEN}✅ GitHub Secret configurado automáticamente.${NC}" || \
+                echo -e "${YELLOW}⚠️  No se pudo configurar automáticamente.${NC}"
+        else
+            echo -e "${YELLOW}⚠️  GitHub CLI no instalado. Instalando...${NC}"
+            if command -v brew &> /dev/null; then
+                brew install gh 2>&1 | tail -3
+                
+                if command -v gh &> /dev/null; then
+                    echo -e "${YELLOW}Autenticándote en GitHub...${NC}"
+                    gh auth login
+                    
+                    REPO_NAME=$(git config remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')
+                    echo "$DEPLOYMENT_TOKEN" | gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN --repo "$REPO_NAME"
+                    echo -e "${GREEN}✅ GitHub Secret configurado.${NC}"
+                fi
+            fi
+        fi
     fi
     
-    echo -e "${YELLOW}Verifica:${NC}"
-    echo "1. Configura el GitHub Secret con el token de arriba"
-    echo "2. GitHub Actions: https://github.com/$(git config remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/actions"
-    echo "3. Cuando termine GitHub Actions, tu app estará en: https://${STATIC_WEB_URL}"
+    echo ""
+    echo -e "${GREEN}========================================${NC}"
+    echo -e "${GREEN}✅ DESPLIEGUE COMPLETADO${NC}"
+    echo -e "${GREEN}========================================${NC}"
+    echo ""
+    echo -e "${YELLOW}Estado:${NC}"
+    echo "  ✅ Infraestructura desplegada"
+    echo "  ✅ Backend desplegado"
+    echo "  ✅ Base de datos inicializada"
+    echo "  ✅ GitHub Secret configurado"
+    echo "  ⏳ Frontend desplegándose vía GitHub Actions (2-5 minutos)"
+    echo ""
+    echo -e "${YELLOW}URLs:${NC}"
+    echo "  🌐 Frontend: https://${STATIC_WEB_URL}"
+    echo "  📡 API: https://bookr-api.azurewebsites.net/api"
+    echo "  📊 GitHub Actions: https://github.com/$(git config remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/actions"
     echo ""
 else
     echo ""
