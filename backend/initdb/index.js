@@ -23,11 +23,6 @@ const config = {
 
 module.exports = async function (context, req) {
     context.log('InitDB function triggered');
-    context.log('Config:', {
-        server: config.server,
-        database: config.database,
-        user: config.user
-    });
 
     let pool = null;
     
@@ -55,7 +50,6 @@ module.exports = async function (context, req) {
                 await pool.request().query(statements[i]);
                 context.log(`✅ Statement ${i + 1} ejecutado`);
             } catch (err) {
-                // Ignorar errores de "objeto ya existe"
                 if (err.message.includes('There is already an object') || 
                     err.message.includes('already exists')) {
                     context.log(`⚠️  Statement ${i + 1} - objeto ya existe, continuando...`);
@@ -64,6 +58,20 @@ module.exports = async function (context, req) {
                     throw err;
                 }
             }
+        }
+
+        // Insertar usuario demo
+        try {
+            await pool.request().query(`
+                IF NOT EXISTS (SELECT 1 FROM [dbo].[Users] WHERE Id = '00000000-0000-0000-0000-000000000001')
+                BEGIN
+                    INSERT INTO [dbo].[Users] (Id, Email, PasswordHash, Name, Avatar)
+                    VALUES ('00000000-0000-0000-0000-000000000001', 'demo@bookr.com', 'demo', 'Usuario Demo', '👤')
+                END
+            `);
+            context.log('✅ Usuario demo creado');
+        } catch (err) {
+            context.log('⚠️  Usuario demo ya existe');
         }
 
         await pool.close();
@@ -81,7 +89,6 @@ module.exports = async function (context, req) {
         };
     } catch (err) {
         context.log.error('InitDB error:', err.message);
-        context.log.error('Stack:', err.stack);
         
         if (pool) {
             try {
@@ -104,4 +111,3 @@ module.exports = async function (context, req) {
         };
     }
 };
-

@@ -1,16 +1,8 @@
 const { query } = require('../src/database');
-const { verifyToken } = require('../src/auth');
 const mssql = require('mssql');
 
-function getUserIdFromToken(req) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return null;
-    }
-    const token = authHeader.substring(7);
-    const decoded = verifyToken(token);
-    return decoded ? decoded.id : null;
-}
+// ID fijo para demo sin autenticación
+const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 module.exports = async function (context, req) {
     context.log('Reservations function triggered:', req.method);
@@ -30,19 +22,6 @@ module.exports = async function (context, req) {
     }
 
     try {
-        const userId = getUserIdFromToken(req);
-        if (!userId) {
-            context.res = {
-                status: 401,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                body: JSON.stringify({ error: 'Unauthorized' })
-            };
-            return;
-        }
-
         // GET - Obtener todas las reservaciones
         if (req.method === 'GET' && !req.query.id) {
             const reservations = await query(`
@@ -53,7 +32,7 @@ module.exports = async function (context, req) {
                 WHERE r.UserId = @userId
                 ORDER BY r.Date DESC, r.Time DESC
             `, {
-                userId: { type: mssql.UniqueIdentifier, value: userId }
+                userId: { type: mssql.UniqueIdentifier, value: DEMO_USER_ID }
             });
 
             // Get attendees for each reservation
@@ -91,7 +70,7 @@ module.exports = async function (context, req) {
                         INSERTED.Color, INSERTED.ImageUrl, INSERTED.CreatedAt, INSERTED.UpdatedAt
                 VALUES (@userId, @title, @description, @date, @time, @duration, @location, @status, @color, @imageUrl)
             `, {
-                userId: { type: mssql.UniqueIdentifier, value: userId },
+                userId: { type: mssql.UniqueIdentifier, value: DEMO_USER_ID },
                 title: { type: mssql.VarChar, value: title },
                 description: { type: mssql.VarChar, value: description || null },
                 date: { type: mssql.DateTime2, value: date },
@@ -158,7 +137,7 @@ module.exports = async function (context, req) {
             const updates = [];
             const params = {
                 reservationId: { type: mssql.UniqueIdentifier, value: reservationId },
-                userId: { type: mssql.UniqueIdentifier, value: userId }
+                userId: { type: mssql.UniqueIdentifier, value: DEMO_USER_ID }
             };
 
             const body = req.body || {};
@@ -252,7 +231,7 @@ module.exports = async function (context, req) {
                 WHERE Id = @reservationId AND UserId = @userId
             `, {
                 reservationId: { type: mssql.UniqueIdentifier, value: reservationId },
-                userId: { type: mssql.UniqueIdentifier, value: userId }
+                userId: { type: mssql.UniqueIdentifier, value: DEMO_USER_ID }
             });
 
             context.res = {
@@ -287,4 +266,3 @@ module.exports = async function (context, req) {
         };
     }
 };
-
