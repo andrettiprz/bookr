@@ -16,6 +16,19 @@ export const AuthProvider = ({ children }) => {
 
   // Verificar si hay usuario en localStorage al cargar
   useEffect(() => {
+    // Crear usuario demo si no existe
+    const users = JSON.parse(localStorage.getItem('bookr_users') || '[]');
+    if (!users.find(u => u.email === 'demo@bookr.com')) {
+      users.push({
+        id: 'demo-user-id',
+        name: 'Usuario Demo',
+        email: 'demo@bookr.com',
+        password: 'demo123',
+        createdAt: new Date().toISOString()
+      });
+      localStorage.setItem('bookr_users', JSON.stringify(users));
+    }
+
     const storedUser = localStorage.getItem('bookr_user');
     if (storedUser) {
       try {
