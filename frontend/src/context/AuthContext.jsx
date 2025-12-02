@@ -87,6 +87,10 @@ export const AuthProvider = ({ children }) => {
 
   // Actualizar perfil
   const updateProfile = async (updates) => {
+    if (!user) {
+      return { success: false, error: 'Usuario no autenticado' };
+    }
+    
     try {
       const users = JSON.parse(localStorage.getItem('bookr_users') || '[]');
       const userIndex = users.findIndex(u => u.id === user.id);
