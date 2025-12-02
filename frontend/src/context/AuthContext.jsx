@@ -44,39 +44,16 @@ export const AuthProvider = ({ children }) => {
   // Registrar nuevo usuario
   const register = async (userData) => {
     try {
-      // Obtener usuarios existentes
-      const users = JSON.parse(localStorage.getItem('bookr_users') || '[]');
+      // Llamar a la API
+      const api = (await import('../services/api')).default;
+      const result = await api.register(userData.email, userData.password, userData.name);
       
-      // Verificar si el email ya existe
-      if (users.find(u => u.email === userData.email)) {
-        throw new Error('Este email ya está registrado');
+      if (result.success && result.user) {
+        setUser(result.user);
+        return { success: true, user: result.user };
       }
-
-      // Crear nuevo usuario
-      const newUser = {
-        id: crypto.randomUUID(),
-        name: userData.name,
-        email: userData.email,
-        password: userData.password, // En producción: hashear con bcrypt
-        createdAt: new Date().toISOString()
-      };
-
-      // Guardar en la lista de usuarios
-      users.push(newUser);
-      localStorage.setItem('bookr_users', JSON.stringify(users));
-
-      // Crear objeto de sesión (sin password)
-      const userSession = {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email
-      };
-
-      // Guardar sesión
-      localStorage.setItem('bookr_user', JSON.stringify(userSession));
-      setUser(userSession);
-
-      return { success: true, user: userSession };
+      
+      return { success: false, error: 'Error al crear la cuenta' };
     } catch (error) {
       console.error('Error en registro:', error);
       return { success: false, error: error.message };
@@ -86,32 +63,16 @@ export const AuthProvider = ({ children }) => {
   // Iniciar sesión
   const login = async (email, password) => {
     try {
-      // Obtener usuarios
-      const users = JSON.parse(localStorage.getItem('bookr_users') || '[]');
+      // Llamar a la API
+      const api = (await import('../services/api')).default;
+      const result = await api.login(email, password);
       
-      // Buscar usuario
-      const user = users.find(u => u.email === email);
+      if (result.success && result.user) {
+        setUser(result.user);
+        return { success: true, user: result.user };
+      }
       
-      if (!user) {
-        throw new Error('Usuario no encontrado');
-      }
-
-      // Verificar contraseña
-      if (user.password !== password) {
-        throw new Error('Contraseña incorrecta');
-      }
-
-      // Crear sesión
-      const userSession = {
-        id: user.id,
-        name: user.name,
-        email: user.email
-      };
-
-      localStorage.setItem('bookr_user', JSON.stringify(userSession));
-      setUser(userSession);
-
-      return { success: true, user: userSession };
+      return { success: false, error: 'Credenciales inválidas' };
     } catch (error) {
       console.error('Error en login:', error);
       return { success: false, error: error.message };
