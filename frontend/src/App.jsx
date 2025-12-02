@@ -14,24 +14,83 @@ function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <ReservationsProvider>
-          <BrowserRouter>
-            <div className="app">
-              <Header />
-              <main className="main-content">
+        <AuthProvider>
+          <ReservationsProvider>
+            <BrowserRouter>
+              <div className="app">
                 <Routes>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/reservations" element={<Reservations />} />
-                  <Route path="/reservations/new" element={<ReservationForm />} />
-                  <Route path="/reservations/:id" element={<ReservationDetail />} />
-                  <Route path="/reservations/:id/edit" element={<ReservationForm />} />
-                  <Route path="/calendar" element={<Calendar />} />
-                  <Route path="/" element={<Navigate to="/reservations" replace />} />
+                  {/* Rutas públicas */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  
+                  {/* Rutas protegidas */}
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                      <>
+                        <Header />
+                        <main className="main-content">
+                          <Dashboard />
+                        </main>
+                      </>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/reservations" element={
+                    <ProtectedRoute>
+                      <>
+                        <Header />
+                        <main className="main-content">
+                          <Reservations />
+                        </main>
+                      </>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/reservations/new" element={
+                    <ProtectedRoute>
+                      <>
+                        <Header />
+                        <main className="main-content">
+                          <ReservationForm />
+                        </main>
+                      </>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/reservations/:id" element={
+                    <ProtectedRoute>
+                      <>
+                        <Header />
+                        <main className="main-content">
+                          <ReservationDetail />
+                        </main>
+                      </>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/reservations/:id/edit" element={
+                    <ProtectedRoute>
+                      <>
+                        <Header />
+                        <main className="main-content">
+                          <ReservationForm />
+                        </main>
+                      </>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/calendar" element={
+                    <ProtectedRoute>
+                      <>
+                        <Header />
+                        <main className="main-content">
+                          <Calendar />
+                        </main>
+                      </>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="*" element={<Navigate to="/login" replace />} />
                 </Routes>
-              </main>
-            </div>
-          </BrowserRouter>
-        </ReservationsProvider>
+              </div>
+            </BrowserRouter>
+          </ReservationsProvider>
+        </AuthProvider>
       </ToastProvider>
     </ThemeProvider>
   )

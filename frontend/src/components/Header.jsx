@@ -1,8 +1,18 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import Button from './Button'
 import ThemeToggle from './ThemeToggle'
 import './Header.css'
 
 export default function Header() {
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
   return (
     <header className="header">
       <div className="header-content">
@@ -18,7 +28,19 @@ export default function Header() {
         </nav>
         
         <div className="header-actions">
+          {user && (
+            <div className="user-info">
+              <span className="user-name">👤 {user.name}</span>
+            </div>
+          )}
           <ThemeToggle />
+          <Button 
+            variant="outline" 
+            size="small"
+            onClick={handleLogout}
+          >
+            Cerrar Sesión
+          </Button>
         </div>
       </div>
     </header>

@@ -1,16 +1,22 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { useAuth } from './AuthContext'
 import api from '../services/api'
 
 const ReservationsContext = createContext(null)
 
 export function ReservationsProvider({ children }) {
+  const { user } = useAuth()
   const [reservations, setReservations] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    loadReservations()
-  }, [])
+    if (user) {
+      loadReservations()
+    } else {
+      setReservations([])
+    }
+  }, [user])
 
   const loadReservations = async () => {
     
