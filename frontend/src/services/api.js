@@ -1,6 +1,6 @@
-// API Service - Modo Local para Demo (sin backend)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://bookr-api.azurewebsites.net/api';
-const USE_LOCAL_MODE = true; // Modo Local activado para demo inmediato
+// API Service - Vercel Backend
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const USE_LOCAL_MODE = true; // Modo Local activado - Vercel Functions disponibles como fallback
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001'; // ID fijo para demo sin auth
 
 class ApiService {

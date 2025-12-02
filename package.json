@@ -1,0 +1,14 @@
+{
+  "name": "bookr",
+  "version": "1.0.0",
+  "description": "Sistema de Reservas Automático y Escalable - SaaS",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm install && npm run build",
+    "preview": "cd frontend && npm run preview"
+  },
+  "keywords": ["reservations", "saas", "booking"],
+  "author": "Andretti Quiroz Pérez",
+  "license": "MIT"
+}
+
