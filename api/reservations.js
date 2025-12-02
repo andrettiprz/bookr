@@ -1,6 +1,7 @@
 // Vercel Serverless Function - Reservations CRUD
 // Conectado a Vercel Postgres
 
+import { randomUUID } from 'crypto';
 import { getReservationsByUserId, createReservation, updateReservation, deleteReservation, addAttendees } from '../lib/db.js';
 
 export default async function handler(req, res) {
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const { title, description, date, time, duration, location, status, color, imageUrl, attendees } = req.body;
       
-      const reservationId = crypto.randomUUID();
+      const reservationId = randomUUID();
       const newReservation = await createReservation({
         id: reservationId,
         userId,

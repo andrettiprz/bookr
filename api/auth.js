@@ -1,6 +1,7 @@
 // Vercel Serverless Function - Authentication
 // Login y Register con Vercel Postgres
 
+import { randomUUID } from 'crypto';
 import { getUserByEmail, createUser } from '../lib/db.js';
 
 export default async function handler(req, res) {
@@ -56,7 +57,7 @@ export default async function handler(req, res) {
       }
 
       // Crear nuevo usuario
-      const userId = crypto.randomUUID();
+      const userId = randomUUID();
       const newUser = await createUser(userId, name, email, password);
 
       // Retornar usuario sin password
