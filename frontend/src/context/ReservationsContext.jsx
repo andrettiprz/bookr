@@ -5,20 +5,18 @@ import api from '../services/api'
 const ReservationsContext = createContext(null)
 
 export function ReservationsProvider({ children }) {
-  const { user } = useAuth()
+  const auth = useAuth()
+  const user = auth?.user
   const [reservations, setReservations] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    if (user) {
-      loadReservations()
-    } else {
-      setReservations([])
-    }
-  }, [user])
-
   const loadReservations = async () => {
+    if (!user) {
+      setReservations([])
+      setLoading(false)
+      return
+    }
     
     setLoading(true)
     setError(null)
@@ -26,16 +24,16 @@ export function ReservationsProvider({ children }) {
       const data = await api.getReservations()
       // Transformar datos de la API al formato del frontend
       const transformed = data.reservations.map(r => ({
-        id: r.Id,
-        title: r.Title,
-        description: r.Description,
-        date: r.Date,
-        time: r.Time,
-        duration: r.Duration,
-        location: r.Location,
-        status: r.Status,
-        color: r.Color,
-        imageUrl: r.ImageUrl,
+        id: r.Id || r.id,
+        title: r.Title || r.title,
+        description: r.Description || r.description,
+        date: r.Date || r.date,
+        time: r.Time || r.time,
+        duration: r.Duration || r.duration,
+        location: r.Location || r.location,
+        status: r.Status || r.status,
+        color: r.Color || r.color,
+        imageUrl: r.ImageUrl || r.imageUrl,
         attendees: r.attendees || []
       }))
       setReservations(transformed)
@@ -51,6 +49,10 @@ export function ReservationsProvider({ children }) {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadReservations()
+  }, [user])
 
   const addReservation = async (reservation) => {
     try {
