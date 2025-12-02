@@ -8,7 +8,7 @@ import './Login.css';
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { showToast } = useToast();
+  const { success: showSuccess, error: showError } = useToast();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -27,7 +27,7 @@ const Login = () => {
     
     // Validaciones
     if (!formData.email || !formData.password) {
-      showToast('Por favor completa todos los campos', 'error');
+      showError('Por favor completa todos los campos');
       return;
     }
 
@@ -37,13 +37,13 @@ const Login = () => {
       const result = await login(formData.email, formData.password);
       
       if (result.success) {
-        showToast(`¡Bienvenido de nuevo, ${result.user.name}!`, 'success');
+        showSuccess(`¡Bienvenido de nuevo, ${result.user.name}!`);
         navigate('/');
       } else {
-        showToast(result.error || 'Error al iniciar sesión', 'error');
+        showError(result.error || 'Error al iniciar sesión');
       }
     } catch (error) {
-      showToast('Error al iniciar sesión', 'error');
+      showError('Error al iniciar sesión');
       console.error(error);
     } finally {
       setLoading(false);

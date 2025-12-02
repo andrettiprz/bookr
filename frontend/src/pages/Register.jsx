@@ -8,7 +8,7 @@ import './Login.css';
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
-  const { showToast } = useToast();
+  const { success: showSuccess, error: showError } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -29,17 +29,17 @@ const Register = () => {
     
     // Validaciones
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      showToast('Por favor completa todos los campos', 'error');
+      showError('Por favor completa todos los campos');
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      showToast('Las contraseñas no coinciden', 'error');
+      showError('Las contraseñas no coinciden');
       return;
     }
 
     if (formData.password.length < 6) {
-      showToast('La contraseña debe tener al menos 6 caracteres', 'error');
+      showError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
@@ -53,13 +53,13 @@ const Register = () => {
       });
       
       if (result.success) {
-        showToast(`¡Cuenta creada! Bienvenido, ${result.user.name}`, 'success');
+        showSuccess(`¡Cuenta creada! Bienvenido, ${result.user.name}`);
         navigate('/');
       } else {
-        showToast(result.error || 'Error al crear la cuenta', 'error');
+        showError(result.error || 'Error al crear la cuenta');
       }
     } catch (error) {
-      showToast('Error al crear la cuenta', 'error');
+      showError('Error al crear la cuenta');
       console.error(error);
     } finally {
       setLoading(false);
