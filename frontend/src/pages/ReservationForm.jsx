@@ -80,15 +80,39 @@ export default function ReservationForm() {
     }))
   }
 
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
+    // Iniciar medición de performance
+    const startTime = performance.now()
+    performance.mark('reservation-create-start')
+
     try {
       if (isEdit) {
         await updateReservation(id, formData)
         success('Reserva actualizada exitosamente')
       } else {
         await addReservation(formData)
+
+        // Medir tiempo de creación
+        const endTime = performance.now()
+        const duration = endTime - startTime
+
+        try {
+          performance.mark('reservation-create-end')
+          performance.measure('reservation-create', 'reservation-create-start', 'reservation-create-end')
+          performance.clearMarks()
+          performance.clearMeasures()
+        } catch (e) {
+          // Ignorar si los marks no existen
+        }
+
+        // Log para QA
+        const meetsTarget = duration < 1000
+        console.log(`[PERFORMANCE] Reservation created in ${duration.toFixed(2)}ms`)
+        console.log(`[QA] Target: <1000ms | Actual: ${duration.toFixed(2)}ms | Status: ${meetsTarget ? '✅ PASS' : '❌ FAIL'}`)
+
         success('Reserva creada exitosamente')
       }
       navigate('/reservations')
@@ -204,8 +228,8 @@ export default function ReservationForm() {
 
           <div className="form-group">
             <label htmlFor="category">Categoría</label>
-            <CategorySelect 
-              value={formData.category} 
+            <CategorySelect
+              value={formData.category}
               onChange={(category) => setFormData(prev => ({ ...prev, category }))}
             />
           </div>
