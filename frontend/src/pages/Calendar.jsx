@@ -1,13 +1,43 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useReservations } from '../context/ReservationsContext'
 import { useNavigate } from 'react-router-dom'
 import Card from '../components/Card'
 import './Calendar.css'
 
 export default function Calendar() {
-  const { reservations, getReservationsByDate } = useReservations()
+  const { reservations, getReservationsByDate, loading } = useReservations()
   const navigate = useNavigate()
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [loadTime, setLoadTime] = useState(null)
+  const startTimeRef = useRef(null)
+
+  // Marcar inicio de carga
+  useEffect(() => {
+    startTimeRef.current = performance.now()
+    performance.mark('calendar-load-start')
+  }, [])
+
+  // Medir tiempo cuando termine de cargar
+  useEffect(() => {
+    if (!loading && reservations.length >= 0 && startTimeRef.current) {
+      const endTime = performance.now()
+      const duration = endTime - startTimeRef.current
+
+      performance.mark('calendar-load-end')
+      performance.measure('calendar-load', 'calendar-load-start', 'calendar-load-end')
+
+      setLoadTime(duration)
+
+      // Log para QA
+      const meetsTarget = duration < 2000
+      console.log(`[PERFORMANCE] Calendar loaded in ${duration.toFixed(2)}ms`)
+      console.log(`[QA] Target: <2000ms | Actual: ${duration.toFixed(2)}ms | Status: ${meetsTarget ? '✅ PASS' : '❌ FAIL'}`)
+
+      // Limpiar marks
+      performance.clearMarks()
+      performance.clearMeasures()
+    }
+  }, [loading, reservations])
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -52,7 +82,7 @@ export default function Calendar() {
 
   const renderCalendarDays = () => {
     const days = []
-    
+
     // Empty cells for days before the first day of the month
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>)
@@ -62,7 +92,7 @@ export default function Calendar() {
     for (let day = 1; day <= daysInMonth; day++) {
       const dayReservations = getReservationsForDay(day)
       const isTodayDate = isToday(day)
-      
+
       days.push(
         <div
           key={day}
@@ -91,9 +121,24 @@ export default function Calendar() {
     <div className="calendar-page">
       <div className="calendar-header">
         <h1>Calendario</h1>
-        <button onClick={goToToday} className="today-btn">
-          Hoy
-        </button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          {/* Indicador de performance para QA */}
+          {loadTime !== null && (
+            <div style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              backgroundColor: loadTime < 2000 ? '#06D6A0' : '#FF6B6B',
+              color: 'white'
+            }}>
+              ⏱️ {loadTime.toFixed(0)}ms {loadTime < 2000 ? '✅' : '❌'}
+            </div>
+          )}
+          <button onClick={goToToday} className="today-btn">
+            Hoy
+          </button>
+        </div>
       </div>
 
       <Card className="calendar-card">
@@ -121,10 +166,10 @@ export default function Calendar() {
 
       {selectedDateReservations.length > 0 && (
         <Card className="selected-date-reservations">
-          <h3>Reservas del {currentDate.toLocaleDateString('es-MX', { 
-            day: 'numeric', 
-            month: 'long', 
-            year: 'numeric' 
+          <h3>Reservas del {currentDate.toLocaleDateString('es-MX', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
           })}</h3>
           <div className="reservations-list">
             {selectedDateReservations.map(reservation => (
