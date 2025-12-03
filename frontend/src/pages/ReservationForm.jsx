@@ -9,7 +9,7 @@ import './ReservationForm.css'
 
 export default function ReservationForm() {
   const { id } = useParams()
-  const { reservations, addReservation, updateReservation } = useReservations()
+  const { reservations, addReservation, updateReservation, refreshReservations } = useReservations()
   const navigate = useNavigate()
   const isEdit = !!id
 
@@ -112,6 +112,9 @@ export default function ReservationForm() {
         const meetsTarget = duration < 1000
         console.log(`[PERFORMANCE] Reservation created in ${duration.toFixed(2)}ms`)
         console.log(`[QA] Target: <1000ms | Actual: ${duration.toFixed(2)}ms | Status: ${meetsTarget ? '✅ PASS' : '❌ FAIL'}`)
+
+        // Refrescar lista de reservaciones para que aparezca inmediatamente
+        await refreshReservations()
 
         success('Reserva creada exitosamente')
       }
