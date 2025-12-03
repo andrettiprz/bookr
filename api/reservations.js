@@ -50,9 +50,12 @@ export default async function handler(req, res) {
           imageUrl
         });
 
-        // Agregar asistentes si hay
+        // Agregar asistentes si hay (y tienen datos válidos)
         if (attendees && attendees.length > 0) {
-          await addAttendees(reservationId, attendees);
+          const validAttendees = attendees.filter(a => a.name && a.email);
+          if (validAttendees.length > 0) {
+            await addAttendees(reservationId, validAttendees);
+          }
         }
 
         return res.status(201).json({ reservation: newReservation });
