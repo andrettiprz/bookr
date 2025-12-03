@@ -23,8 +23,14 @@ export default function Calendar() {
       const endTime = performance.now()
       const duration = endTime - startTimeRef.current
 
-      performance.mark('calendar-load-end')
-      performance.measure('calendar-load', 'calendar-load-start', 'calendar-load-end')
+      try {
+        performance.mark('calendar-load-end')
+        performance.measure('calendar-load', 'calendar-load-start', 'calendar-load-end')
+        performance.clearMarks()
+        performance.clearMeasures()
+      } catch (e) {
+        // Ignorar si los marks no existen
+      }
 
       setLoadTime(duration)
 
@@ -32,10 +38,6 @@ export default function Calendar() {
       const meetsTarget = duration < 2000
       console.log(`[PERFORMANCE] Calendar loaded in ${duration.toFixed(2)}ms`)
       console.log(`[QA] Target: <2000ms | Actual: ${duration.toFixed(2)}ms | Status: ${meetsTarget ? '✅ PASS' : '❌ FAIL'}`)
-
-      // Limpiar marks
-      performance.clearMarks()
-      performance.clearMeasures()
     }
   }, [loading, reservations])
 
