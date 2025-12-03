@@ -121,24 +121,9 @@ export default function Calendar() {
     <div className="calendar-page">
       <div className="calendar-header">
         <h1>Calendario</h1>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          {/* Indicador de performance para QA */}
-          {loadTime !== null && (
-            <div style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              fontSize: '0.875rem',
-              fontWeight: '600',
-              backgroundColor: loadTime < 2000 ? '#06D6A0' : '#FF6B6B',
-              color: 'white'
-            }}>
-              ⏱️ {loadTime.toFixed(0)}ms {loadTime < 2000 ? '✅' : '❌'}
-            </div>
-          )}
-          <button onClick={goToToday} className="today-btn">
-            Hoy
-          </button>
-        </div>
+        <button onClick={goToToday} className="today-btn">
+          Hoy
+        </button>
       </div>
 
       <Card className="calendar-card">
