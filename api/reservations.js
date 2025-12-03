@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   try {
     // Verificar que el usuario esté autenticado (desde headers o body)
     const userId = req.headers['x-user-id'] || req.body?.userId;
-    
+
     if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
@@ -33,40 +33,53 @@ export default async function handler(req, res) {
     // POST - Crear reservación
     if (req.method === 'POST') {
       const { title, description, date, time, duration, location, status, color, imageUrl, attendees } = req.body;
-      
-      const reservationId = randomUUID();
-      const newReservation = await createReservation({
-        id: reservationId,
-        userId,
-        title,
-        description,
-        date,
-        time,
-        duration: duration || 60,
-        location,
-        status: status || 'Pendiente',
-        color: color || '#3B82F6',
-        imageUrl
-      });
 
-      // Agregar asistentes si hay
-      if (attendees && attendees.length > 0) {
-        await addAttendees(reservationId, attendees);
+      try {
+        const reservationId = randomUUID();
+        const newReservation = await createReservation({
+          id: reservationId,
+          userId,
+          title,
+          description,
+          date,
+          time,
+          duration: duration || 60,
+          location,
+          status: status || 'Pendiente',
+          color: color || '#3B82F6',
+          imageUrl
+        });
+
+        // Agregar asistentes si hay
+        if (attendees && attendees.length > 0) {
+          await addAttendees(reservationId, attendees);
+        }
+
+        return res.status(201).json({ reservation: newReservation });
+      } catch (error) {
+        // Detectar error de constraint único (doble reserva)
+        if (error.code === '23505') { // Unique violation en PostgreSQL
+          console.log('[CONCURRENCY] Double booking prevented:', { date, time, location });
+          return res.status(409).json({
+            error: 'Este horario ya está reservado. Por favor selecciona otro horario.',
+            code: 'SLOT_ALREADY_BOOKED',
+            details: { date, time, location }
+          });
+        }
+        throw error; // Re-throw otros errores
       }
-      
-      return res.status(201).json({ reservation: newReservation });
     }
 
     // PUT - Actualizar reservación
     if (req.method === 'PUT') {
       const { id, ...updates } = req.body;
-      
+
       if (!id) {
         return res.status(400).json({ error: 'ID de reservación requerido' });
       }
 
       const updatedReservation = await updateReservation(id, userId, updates);
-      
+
       if (!updatedReservation) {
         return res.status(404).json({ error: 'Reservación no encontrada' });
       }
@@ -77,7 +90,7 @@ export default async function handler(req, res) {
     // DELETE - Eliminar reservación
     if (req.method === 'DELETE') {
       const { id } = req.query;
-      
+
       if (!id) {
         return res.status(400).json({ error: 'ID de reservación requerido' });
       }

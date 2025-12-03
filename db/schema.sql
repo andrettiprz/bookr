@@ -25,7 +25,9 @@ CREATE TABLE IF NOT EXISTS reservations (
     image_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    -- Constraint único para prevenir dobles reservas en el mismo horario y ubicación
+    UNIQUE(date, time, location)
 );
 
 -- Tabla de Asistentes
